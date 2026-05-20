@@ -202,7 +202,7 @@ uvx pre-commit run --all-files
 clear
 uv run python -m streaming.kafka_producer_case
 
-# do chores
+# do chores BD
 uv run ruff format .
 uv run ruff check . --fix
 uv run python -m pyright
