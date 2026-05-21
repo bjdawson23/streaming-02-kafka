@@ -202,6 +202,7 @@ uvx pre-commit run --all-files
 clear
 uv run python -m streaming.kafka_producer_case
 uv run python -m streaming.kafka_producer_dawson
+uv run python -m streaming.kafka_consumer_dawson
 
 # do chores BD
 uv run ruff format .

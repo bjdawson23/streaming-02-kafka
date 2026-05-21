@@ -23,7 +23,7 @@ to get these projects running on your machine.
 
 ### Dataset
 
-Tthe dataset used by the Kafka producer:
+The dataset used by the Kafka producer:
 
 - The name of the dataset file is sales.csv.
 - This dataset contains records of sales transactions
