@@ -46,7 +46,7 @@ The consumer receives and does these things with each message:
 
 - The consumer receives from Kafka sales information from the sales.csv file in this case.
 - The consumer received 20 message(s) from topic 'streaming-02-kafka-case'.
-- It logs and prints each of the messages on screen and to a CSV file.
+- It logs and prints each of the messages on screen and to a CSV file.  consumed_dawson_sales.csv
 - It processes and filters the payment_method field looking for a count of PayPal usage.
 
 ### Experiments
