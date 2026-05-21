@@ -1,4 +1,4 @@
-"""src/streaming/kafka_consumer_case.py.
+"""src/streaming/kafka_consumer_dawson.py.
 
 Kafka consumer: full pipeline example.
 
@@ -10,12 +10,12 @@ Work up to see how it all fits together.
 Many functions are standard helpers
 and should not need project-specific modifications.
 
-Author: Denise Case
+Author: Branton Dawson
 Date: 2026-05
 
 Terminal command to run this file from the root project folder:
 
-    uv run python -m streaming.kafka_consumer_case
+    uv run python -m streaming.kafka_consumer_dawson
 
 OBS:
   Don't edit this file - it should remain a working example.
@@ -68,7 +68,7 @@ ROOT_DIR: Final[Path] = Path.cwd()
 DATA_DIR: Final[Path] = ROOT_DIR / "data"
 OUTPUT_DIR: Final[Path] = DATA_DIR / "output"
 
-OUTPUT_CSV: Final[Path] = OUTPUT_DIR / "consumed_sales.csv"
+OUTPUT_CSV: Final[Path] = OUTPUT_DIR / "consumed_dawson_sales.csv"
 
 
 # ==========================================================
@@ -205,7 +205,7 @@ def process_message(row: dict[str, Any]) -> dict[str, Any]:
     return row
 
 
-def consume_messages(consumer: Any) -> int:
+def consume_messages(consumer: Any) -> tuple[int, int]:
     """Consume raw messages from the Kafka topic.
 
     Runs until MAX_MESSAGES is reached or TIMEOUT_SECONDS elapses
@@ -215,13 +215,14 @@ def consume_messages(consumer: Any) -> int:
         consumer: An open Kafka consumer subscribed to the topic.
 
     Returns:
-        The number of consumed messages.
+        The number of consumed messages and number with payment_method=paypal.
     """
     LOG.info("Consuming messages...")
     LOG.info(f"Waiting for up to {MAX_MESSAGES} message(s).")
     LOG.info("Press CTRL+C to stop early.\n")
 
     consumed_count = 0
+    paypal_count = 0
 
     while consumed_count < MAX_MESSAGES:
         row = consume_kafka_message(
@@ -238,6 +239,9 @@ def consume_messages(consumer: Any) -> int:
 
         processed = process_message(row)
 
+        if str(processed.get("payment_method", "")).strip().lower() == "paypal":
+            paypal_count += 1
+
         append_csv_row(
             path=OUTPUT_CSV,
             row=processed,
@@ -248,7 +252,7 @@ def consume_messages(consumer: Any) -> int:
         LOG.info("MESSAGE CONSUMED")
         LOG.info(f"consumed={consumed_count}")
 
-    return consumed_count
+    return consumed_count, paypal_count
 
 
 def save_artifacts(stats: RunningStats) -> None:
@@ -262,10 +266,13 @@ def save_artifacts(stats: RunningStats) -> None:
 # ===========================================================================
 
 
-def log_summary(consumed_count: int, settings: KafkaSettings) -> None:
+def log_summary(
+    consumed_count: int, paypal_count: int, settings: KafkaSettings
+) -> None:
     """Log final summary statistics."""
     LOG.info("Summary:")
     LOG.info(f"Consumed {consumed_count} message(s) from topic {settings.topic!r}.")
+    LOG.info(f"PayPal payment_method count: {paypal_count}")
     log_path(LOG, "OUTPUT_CSV", OUTPUT_CSV)
     LOG.info("========================")
     LOG.info("Consumer executed successfully!")
@@ -297,9 +304,10 @@ def main() -> None:
     initialize_output()
 
     consumed_count = 0
+    paypal_count = 0
 
     try:
-        consumed_count = consume_messages(consumer)
+        consumed_count, paypal_count = consume_messages(consumer)
     finally:
         consumer.close()
         LOG.info("Kafka consumer closed.")
@@ -308,7 +316,7 @@ def main() -> None:
     LOG.info("SECTION E. Exit")
     LOG.info("========================")
 
-    log_summary(consumed_count, settings)
+    log_summary(consumed_count, paypal_count, settings)
 
 
 # === CONDITIONAL EXECUTION GUARD ===

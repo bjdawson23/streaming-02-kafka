@@ -1,4 +1,4 @@
-"""src/streaming/kafke_producer_case.py - Kafka producer example.
+"""src/streaming/kafka_producer_dawson.py - Kafka producer example.
 
 Reads sales from data/sales.csv
 and sends records to a Kafka topic one message at a time.
@@ -9,12 +9,12 @@ Work up to see how it all fits together.
 Many functions are standard helpers
 and should not need project-specific modifications.
 
-Author: Denise Case
+Author: Branton Dawson
 Date: 2026-05
 
 Terminal command to run this file from the root project folder:
 
-    uv run python -m streaming.kafka_producer_case
+    uv run python -m streaming.kafka_producer_dawson
 
 OBS:
   Don't edit this file - it should remain a working example.
@@ -129,17 +129,21 @@ def generate_messages(count: int) -> Generator[dict[str, str]]:
     yield from sales_rows[:count]
 
 
-def send_messages(producer: Any, settings: KafkaSettings) -> int:
+def send_messages(producer: Any, settings: KafkaSettings) -> tuple[int, int]:
     """Generate and send messages to the Kafka topic."""
     LOG.info("Sending messages...")
     LOG.info(f"Sending up to {MESSAGE_COUNT} message(s) to topic {settings.topic!r}.")
     LOG.info("Watch each sale arrive. Press CTRL+C to stop early.\n")
 
     sent_count = 0
+    paypal_count = 0
 
     try:
         for message in generate_messages(MESSAGE_COUNT):
             LOG.info(format_message_for_log(message))
+
+            if message.get("payment_method", "").strip().lower() == "paypal":
+                paypal_count += 1
 
             key = get_message_key(message)
             LOG.info(f"  Sending message with key={key}")
@@ -160,7 +164,7 @@ def send_messages(producer: Any, settings: KafkaSettings) -> int:
         LOG.error("Producer stopped before completing all messages.")
         raise SystemExit(1) from error
 
-    return sent_count
+    return sent_count, paypal_count
 
 
 # ===========================================================================
@@ -168,15 +172,17 @@ def send_messages(producer: Any, settings: KafkaSettings) -> int:
 # ===========================================================================
 
 
-def log_summary(sent_count: int, settings: KafkaSettings) -> None:
+def log_summary(sent_count: int, paypal_count: int, settings: KafkaSettings) -> None:
     """Log final summary statistics.
 
     Arguments:
         sent_count: The number of messages successfully sent to Kafka.
+        paypal_count: The number of sent messages with payment_method=paypal.
         settings: The KafkaSettings object containing configuration details.
     """
     LOG.info("Summary:")
     LOG.info(f"Sent {sent_count} message(s) to topic {settings.topic!r}.")
+    LOG.info(f"PayPal payment_method count: {paypal_count}")
     LOG.info("========================")
     LOG.info("Producer executed successfully!")
     LOG.info("========================")
@@ -204,14 +210,14 @@ def main() -> None:
     LOG.info("SECTION P. Produce Messages")
     LOG.info("========================")
 
-    sent_count = send_messages(producer, settings)
+    sent_count, paypal_count = send_messages(producer, settings)
 
     LOG.info("========================")
     LOG.info("SECTION E. Exit")
     LOG.info("========================")
 
     producer.flush()
-    log_summary(sent_count, settings)
+    log_summary(sent_count, paypal_count, settings)
 
 
 # === CONDITIONAL EXECUTION GUARD ===
